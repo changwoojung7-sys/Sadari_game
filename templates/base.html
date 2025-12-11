@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>KHIS Arcade Ladder Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            arcadeBg: "#050816",
+            arcadePanel: "#0B1020",
+            arcadeNeon: "#22C55E",
+            arcadeNeonBlue: "#38BDF8",
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .player-icon {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 0 14px rgba(56,189,248,0.9);
+      border: 2px solid #22C55E;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-arcadeBg min-h-screen text-slate-50">
+  <!-- 헤더 -->
+  <header class="w-full bg-arcadePanel/90 border-b border-slate-700 shadow-lg sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto flex items-center gap-3 px-4 py-2">
+      <img src="{{ url_for('static', filename='img/khis_logo.png') }}"
+           alt="KHIS Logo"
+           class="h-8 w-auto object-contain bg-white rounded-md px-2 py-1" />
+      <div class="flex flex-col leading-tight">
+        <span class="text-sm font-semibold">한국보건의료정보원 · 팀 커피/간식 사다리</span>
+        <span class="text-[11px] text-slate-400">KHIS Arcade Ladder – Fair & Fun Draw</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 컨테이너 -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <div class="bg-arcadePanel/80 rounded-2xl shadow-2xl border border-slate-700/70 p-4 sm:p-6">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</body>
+</html>

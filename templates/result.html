@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+  #ladderWrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fadein {
+    animation: fadein 0.3s ease-out forwards;
+  }
+
+  .player-icon {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid #22C55E;
+    box-shadow: 0 0 14px rgba(56,189,248,0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between items-center mb-2">
+  <h2 class="text-lg font-semibold flex items-center gap-2">
+    <span class="inline-block w-2 h-5 bg-arcadeNeonBlue rounded-full"></span>
+    사다리 결과
+  </h2>
+  <button onclick="location.href='/'"
+          class="bg-slate-700/80 hover:bg-slate-600 text-xs text-slate-50 px-3 py-1.5 rounded-full">
+    다시 하기
+  </button>
+</div>
+
+<p class="text-xs text-slate-300 mb-3">
+  플레이어 버튼을 누르면 캐릭터가 내려가고, 완주 시 결과가 아래 표에 추가됩니다.
+</p>
+
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for r in results %}
+  <button onclick="startAnimation({{ loop.index0 }})"
+          class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-full border border-arcadeNeon/40">
+    {{ r.name }} 시작
+  </button>
+  {% endfor %}
+</div>
+
+<!-- 사다리 영역 -->
+<div class="rounded-2xl bg-slate-900/60 border border-slate-700 p-4 overflow-x-auto mb-6">
+  <div id="ladderWrapper">
+    <canvas id="ladderCanvas"></canvas>
+  </div>
+</div>
+
+<!-- 결과표: 비어있고, 플레이어 내려올 때마다 1명씩 추가 -->
+<h3 class="text-sm font-semibold mb-2">실시간 결과</h3>
+<table class="w-full text-xs border-collapse" id="resultTable">
+  <thead>
+    <tr class="bg-slate-800/80">
+      <th class="border border-slate-700 px-2 py-1 text-left">플레이어</th>
+      <th class="border border-slate-700 px-2 py-1 text-left">결과</th>
+    </tr>
+  </thead>
+  <tbody id="resultBody">
+  </tbody>
+</table>
+
+<script>
+const ladder = {{ ladder|tojson }};
+const rows = {{ ladder_rows }};
+const numPlayers = {{ num_players }};
+const results = {{ results|tojson }};
+const bottomRewards = {{ bottom_rewards|tojson }};
+
+const charImages = [
+  "{{ url_for('static', filename='img/chars/char1.png') }}",
+  "{{ url_for('static', filename='img/chars/char2.png') }}",
+  "{{ url_for('static', filename='img/chars/char3.png') }}",
+  "{{ url_for('static', filename='img/chars/char4.png') }}",
+  "{{ url_for('static', filename='img/chars/char5.png') }}",
+  "{{ url_for('static', filename='img/chars/char6.png') }}",
+  "{{ url_for('static', filename='img/chars/char7.png') }}",
+  "{{ url_for('static', filename='img/chars/char8.png') }}",
+  "{{ url_for('static', filename='img/chars/char9.png') }}",
+  "{{ url_for('static', filename='img/chars/char10.png') }}"
+];
+
+const colGap = 90;
+const rowGap = 32;
+const marginX = 60;
+const marginTop = 50;
+const marginBottom = 50;
+
+const canvas = document.getElementById("ladderCanvas");
+const ctx = canvas.getContext("2d");
+const wrapper = document.getElementById("ladderWrapper");
+
+let railsX = [];
+let topY, bottomY;
+let icons = [];
+let currentAnim = null;
+
+function initLadder(){
+  const width = marginX*2 + (numPlayers-1)*colGap;
+  const height = marginTop + rows*rowGap + marginBottom;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  topY = marginTop;
+  bottomY = marginTop + rows*rowGap;
+
+  for(let i=0; i<numPlayers; i++){
+    railsX[i] = marginX + i*colGap;
+  }
+
+  drawLadder();
+  createIcons();
+}
+
+function drawLadder(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="#0f172a";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.lineWidth=4;
+
+  // 세로선
+  for(let i=0;i<numPlayers;i++){
+    ctx.strokeStyle="#22C55E";
+    ctx.beginPath();
+    ctx.moveTo(railsX[i], topY);
+    ctx.lineTo(railsX[i], bottomY);
+    ctx.stroke();
+  }
+
+  // 가로선
+  for(let r=0; r<rows; r++){
+    const y = topY + (r+1)*rowGap;
+    for(let c=0;c<numPlayers-1;c++){
+      if(ladder[r][c]){
+        ctx.strokeStyle="#38BDF8";
+        ctx.beginPath();
+        ctx.moveTo(railsX[c], y);
+        ctx.lineTo(railsX[c+1], y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function createIcons(){
+  icons.forEach(x => x.remove());
+  icons=[];
+
+  for(let i=0;i<numPlayers;i++){
+    const img = document.createElement("div");
+    img.className="player-icon";
+    img.style.backgroundImage=`url('${charImages[i]}')`;
+
+    wrapper.appendChild(img);
+    img.style.left = railsX[i]+"px";
+    img.style.top = (topY-30)+"px";
+
+    icons.push(img);
+  }
+}
+
+function computePath(start){
+  let col = start;
+  let x = railsX[col];
+  let y = topY-30;
+
+  const pts=[{x,y}];
+
+  for(let r=0;r<rows;r++){
+    const ny = topY + (r+1)*rowGap;
+    pts.push({x,y:ny});
+    y=ny;
+
+    if(col>0 && ladder[r][col-1]){
+      col-=1;
+      x=railsX[col];
+      pts.push({x,y});
+    }else if(col<numPlayers-1 && ladder[r][col]){
+      col+=1;
+      x=railsX[col];
+      pts.push({x,y});
+    }
+  }
+  pts.push({x, y: bottomY+10});
+  return pts;
+}
+
+function startAnimation(i){
+  if(currentAnim) currentAnim.running=false;
+
+  const icon = icons[i];
+  const path = computePath(results[i].start_col);
+
+  icon.style.left = path[0].x+"px";
+  icon.style.top  = path[0].y+"px";
+
+  const speed=280;
+  let seg=0, t=0;
+  let last=null;
+  const anim={running:true};
+  currentAnim=anim;
+
+  function step(time){
+    if(!anim.running) return;
+
+    if(!last){ last=time; requestAnimationFrame(step); return; }
+
+    let dt=(time-last)/1000;
+    last=time;
+    let dist=dt*speed;
+
+    while(dist>0 && seg<path.length-1){
+      const p0=path[seg], p1=path[seg+1];
+      const dx=p1.x-p0.x, dy=p1.y-p0.y;
+      const len=Math.hypot(dx,dy);
+      const remain=len*(1-t);
+
+      if(dist<remain){
+        t+=dist/len;
+        const cx=p0.x+dx*t, cy=p0.y+dy*t;
+        icon.style.left=cx+"px";
+        icon.style.top=cy+"px";
+        dist=0;
+      } else {
+        dist-=remain;
+        seg++; t=0;
+        icon.style.left=p1.x+"px";
+        icon.style.top=p1.y+"px";
+      }
+    }
+
+    if(seg<path.length-1){
+      requestAnimationFrame(step);
+    } else {
+      anim.running=false;
+
+      // 🔥 여기서 결과 1명 추가
+      addResult(i);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function addResult(i){
+  const r = results[i];
+  const body = document.getElementById("resultBody");
+
+  const tr=document.createElement("tr");
+  tr.className="animate-fadein";
+
+  tr.innerHTML=`
+    <td class="border border-slate-700 px-2 py-1">${r.name}</td>
+    <td class="border border-slate-700 px-2 py-1 ${r.reward!='꽝'?'text-arcadeNeon font-bold':''}">
+      ${r.reward}
+    </td>
+  `;
+
+  body.appendChild(tr);
+}
+
+window.addEventListener("DOMContentLoaded", initLadder);
+</script>
+
+{% endblock %}

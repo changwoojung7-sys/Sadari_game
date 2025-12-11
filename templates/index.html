@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script>
+function updatePlayers() {
+  const numInput = document.getElementById("num_players");
+  const n = parseInt(numInput.value || "0");
+  const area = document.getElementById("player_area");
+  area.innerHTML = "";
+
+  if (n < 2 || n > 10) {
+    area.innerHTML = '<p class="text-xs text-red-400 mt-1">플레이어 수는 2~10명 사이여야 합니다.</p>';
+    return;
+  }
+
+  for (let i = 0; i < n; i++) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "mt-2";
+    wrapper.innerHTML = `
+      <label class="text-xs font-semibold text-slate-200">플레이어 ${i+1} 이름</label>
+      <input type="text" name="name_${i}"
+             placeholder="플레이어${i+1}"
+             class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900/60 px-3 py-1.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-arcadeNeon focus:border-transparent" />
+    `;
+    area.appendChild(wrapper);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", updatePlayers);
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h2 class="text-lg sm:text-xl font-semibold text-slate-50 flex items-center gap-2">
+  <span class="inline-block w-2 h-5 bg-arcadeNeon rounded-full"></span>
+  사다리 게임 설정
+</h2>
+<p class="mt-1 text-xs sm:text-sm text-slate-300">
+  팀원 이름과 벌칙/상품을 입력하면, 아케이드 사다리가 공정하게 결과를 정해줍니다 🎮
+</p>
+
+{% if error %}
+<div class="mt-3 rounded-lg border border-red-500/60 bg-red-900/40 px-3 py-2 text-xs text-red-100">
+  {{ error }}
+</div>
+{% endif %}
+
+<form method="post" class="mt-4 space-y-4">
+  <!-- 플레이어 수 -->
+  <div>
+    <label for="num_players" class="text-xs font-semibold text-slate-200">플레이어 수 (2~10명)</label>
+    <input id="num_players" name="num_players" type="number" min="2" max="10" value="4"
+           oninput="updatePlayers()" onchange="updatePlayers()"
+           class="mt-1 w-28 rounded-lg border border-slate-600 bg-slate-900/60 px-3 py-1.5 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-arcadeNeon focus:border-transparent" />
+    <div id="player_area" class="grid sm:grid-cols-2 gap-x-6"></div>
+  </div>
+
+  <!-- 벌칙 / 상품 -->
+  <div>
+    <label for="rewards" class="text-xs font-semibold text-slate-200">벌칙 / 상품 목록 (쉼표로 구분)</label>
+    <textarea id="rewards" name="rewards" rows="3"
+              placeholder="예) 커피 쏘기, 간식 사오기"
+              class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900/60 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-arcadeNeon focus:border-transparent"></textarea>
+    <p class="mt-1 text-[11px] text-slate-400 leading-snug">
+      · 벌칙/상품은 1개 이상, 플레이어 수 이하여야 합니다.<br>
+      · 입력한 벌칙/상품 개수만큼은 반드시 누군가 당첨되며, <span class="text-arcadeNeon font-semibold">중복 당첨은 없습니다.</span><br>
+      · 나머지 플레이어는 자동으로 <span class="italic">'꽝'</span> 처리됩니다.
+    </p>
+  </div>
+
+  <!-- 버튼 -->
+  <div class="pt-2 flex flex-wrap gap-2">
+    <button type="submit"
+            class="btn btn-primary bg-arcadeNeon text-slate-900 px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg shadow-arcadeNeon/30 hover:bg-emerald-400">
+      사다리 시작!
+    </button>
+    <button type="reset"
+            class="btn btn-secondary bg-slate-700/70 text-slate-100 px-4 py-1.5 rounded-full text-sm hover:bg-slate-600"
+            onclick="setTimeout(updatePlayers,0)">
+      초기화
+    </button>
+  </div>
+</form>
+
+{% endblock %}
